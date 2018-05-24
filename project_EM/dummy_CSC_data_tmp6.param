@@ -1,0 +1,24 @@
+AverageInteraction	0.099953
+ClustersReported	12
+CharDist	18.144100
+DataFile	tmp6
+Dimensions	10
+DirectedGrowth	
+KNearestNeighbours	11
+MinTemp	0
+MaxTemp	0.201
+MSTree	
+NumberOfPoints	1536
+NumberOfEdges	4911
+NearestNeighbrs	6.394531
+OutFile	dummy_CSC_data_tmp6
+PottsSpins	20
+RandomSeed	1509465731
+SusceptColors	4
+SaveSuscept	
+SWCycles	100
+SWFraction	0.800000
+ThresholdTheta	0.500000
+TempStep	0.01
+WriteLables	
+WriteLabels	

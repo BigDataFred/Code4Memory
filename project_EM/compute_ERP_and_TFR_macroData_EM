@@ -1,0 +1,171 @@
+function [erpDat1,erpDat2,encTFR,encTFR2,retTFR,retTFR2] = compute_ERP_and_TFR_macroData_EM(macroDat)
+
+%% downsample the original data
+cfg                     = [];
+cfg.resamplefs          = 600;
+cfg.detrend             = 'no';
+
+[macroDat] = ft_resampledata( cfg , macroDat );
+
+cfg                     = [];
+cfg.lpfilter            = 'yes';
+cfg.lpfreq              = 30;
+
+[lpFilt] = ft_preprocessing( cfg , macroDat );
+
+%% split data into encoding and retrieval epochs
+cfg                     = [];
+cfg.trials              = trlIdx_Enc;
+
+[EncDat] = ft_selectdata( cfg , macro_dat );
+
+
+cfg                     = [];
+cfg.trials              = trlIdx_Ret;
+
+[RetDat] = ft_selectdata( cfg , macro_dat );
+clear macro_dat;
+
+%% compute the ERP 4 encoding
+cfg                     = [];
+cfg.trials              = trlIdx_Enc;
+
+[dum] = ft_selectdata( cfg , lpFilt );
+
+% cfg                     =[];
+% cfg.method              = 'runica';
+% 
+% [dum] = ft_componentanalysis( cfg , dum);
+
+cfg                     = [];
+cfg.keeptrials          = 'yes';
+
+[erpDat1] = ft_timelockanalysis( cfg , dum );
+clear dum;
+
+%% compute the ERP 4 retrieval
+cfg                     = [];
+cfg.trials              = trlIdx_Ret;
+
+[dum] = ft_selectdata( cfg , lpFilt );
+
+% cfg                     =[];
+% cfg.method              = 'runica';
+% 
+% [dum] = ft_componentanalysis( cfg , dum);
+
+cfg                     = [];
+cfg.keeptrials          = 'yes';
+
+[erpDat2] = ft_timelockanalysis( cfg , dum );
+clear dum;
+
+%% compute TFR 4 encoding
+cfg                     = [];
+cfg.detrend             = 'yes';
+cfg.demean              = 'yes';
+
+[dum] = ft_preprocessing( cfg , EncDat );
+
+cfg                     = [];
+cfg.method              = 'mtmconvol';
+cfg.pad                 = 'maxperlen';
+cfg.taper               = 'dpss';
+cfg.foi                 = 1:170;
+cfg.toi                 = EncDat.time{1}(1):0.025:EncDat.time{1}(end);
+cfg.keeptrials          = 'yes';
+
+cfg.tapsmofrq(find(cfg.foi<20))     = 1;
+cfg.tapsmofrq(find(cfg.foi>=20))    = 10;
+
+cfg.t_ftimwin(cfg.foi<20)           = ones(1,length(find(cfg.foi<20)));
+cfg.t_ftimwin(cfg.foi>=20)          = 0.25*ones(1,length(find(cfg.foi>=20)));
+
+[encTFR] = ft_freqanalysis( cfg , dum );
+clear dum;
+
+
+cfg                     = [];
+cfg.keeptrials          = 'no';
+
+[encTFR2] = ft_freqdescriptives( cfg , encTFR );
+
+cfg                     = [];
+cfg.baseline            = [-1 0];
+cfg.baselinetype        = 'db';
+
+[encTFR2] = ft_freqbaseline( cfg , encTFR2 );
+
+%% compute TFR 4 retrieval
+cfg                     = [];
+cfg.detrend             = 'yes';
+cfg.demean              = 'yes';
+
+[dum] = ft_preprocessing( cfg , EncDat );
+
+cfg                     = [];
+cfg.method              = 'mtmconvol';
+cfg.pad                 = 'maxperlen';
+cfg.taper               = 'dpss';
+cfg.foi                 = 1:170;
+cfg.toi                 = EncDat.time{1}(1):0.025:EncDat.time{1}(end);
+cfg.keeptrials          = 'yes';
+
+cfg.tapsmofrq(find(cfg.foi<20))     = 1;
+cfg.tapsmofrq(find(cfg.foi>=20))    = 10;
+
+cfg.t_ftimwin(cfg.foi<20)           = ones(1,length(find(cfg.foi<20)));
+cfg.t_ftimwin(cfg.foi>=20)          = 0.25*ones(1,length(find(cfg.foi>=20)));
+
+[retTFR] = ft_freqanalysis( cfg , dum );
+clear dum;
+
+cfg                     = [];
+cfg.keeptrials          = 'no';
+
+[retTFR2] = ft_freqdescriptives( cfg , retTFR );
+
+cfg                     = [];
+cfg.baseline            = [-1 0];
+cfg.baselinetype        = 'db';
+
+[retTFR2] = ft_freqbaseline( cfg , retTFR2 );
+
+% %% visualize
+% m1 = min(min(min(TFR2.powspctrm)));
+% m2 = max(max(max(TFR2.powspctrm)));
+% 
+% figure;
+% for jt =1:size( erpDat1.trial,2)
+%     
+%     subplot(4,4,[1 2 5 6 9 10]);
+%     hold on;
+%     y = squeeze(erpDat1.trial(sIdx1,jt,:));
+%     imagesc(erpDat1.time,1:size(erpDat1.trial,1), y);
+%     plot([0 0],[1 size(erpDat1.trial,1)],'w');
+%     plot([2 2],[1 size(erpDat1.trial,1)],'w');
+%     axis xy;axis tight;    
+%     title(erpDat1.label(jt));
+%     xlim([-1 4]);
+%     
+%     subplot(4,4,[13 14]);
+%     hold on;
+%     y = erpDat1.avg(jt,:);
+%     plot(erpDat1.time,y,'b');
+%     plot([0 0],[min(min(y)) max(max(y))],'k');
+%     plot([2 2],[min(min(y)) max(max(y))],'k');
+%     axis tight;
+%     xlim([-1 4]);
+%     
+%     subplot(4,4,[1 2 5 6 9 10]+2);
+%     imagesc(TFR2.time,TFR2.freq,squeeze(TFR2.powspctrm(jt,:,:)));
+%     hold on;
+%     plot([0 0],[min(TFR2.freq) max(TFR2.freq)],'w-');
+%     plot([2 2],[min(TFR2.freq) max(TFR2.freq)],'w-');
+%     axis xy;
+%     xlim([-1 4]);
+%     
+%     pause;
+%     clf;            
+% end;
+
